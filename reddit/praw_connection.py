@@ -23,7 +23,7 @@ class RedditPrawConnection(BaseRedditConnection):
         try:
             logger.debug("Trying to connect to reddit using provided credentials")
             self.connect(reddit_config)
-            logger.info("PRAW Connection Successful")
+            logger.debug("PRAW Connection Successful")
         except Exception as ex:
             logger.critical("Cannot create PRAW Connection Object due to {}".format(ex))
 

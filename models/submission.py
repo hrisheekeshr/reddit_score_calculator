@@ -19,6 +19,9 @@ class Submission:
         """
         self.__total_comment_score += comment_score
 
+    def get_comment_score(self):
+        return self.__total_comment_score
+
     def calculate_score(self):
         """
         Divides the total score of all comments by the total number of comments for that specific submission.

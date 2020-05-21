@@ -4,7 +4,7 @@ import os
 from config import RedditConfig
 
 
-class TestAppConfig(unittest.TestCase):
+class TestRedditConfig(unittest.TestCase):
 
     def setUp(self) -> None:
         os.environ["CLIENT_ID"] = 'client_id'

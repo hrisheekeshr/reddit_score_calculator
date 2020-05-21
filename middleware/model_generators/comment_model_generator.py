@@ -8,6 +8,7 @@ class CommentModelGenerator:
     :return: generator object
     """
     def __init__(self, comments: list):
+
         self.comments_generator = (Comment(comment) for comment in comments)
 
     def __iter__(self):

@@ -55,7 +55,7 @@ class ScrapeSubreddits(luigi.Task):
             makedirs('data/{session_id}'.format(session_id = self.session_id))
 
         # Creates a pickle file and writes out the binary data to the filesystem.
-        with open('data/{session_id}/subreddits.pickle'.format(session_id = self.session_id), 'wb') as outfile:
+        with open(self.output().path, 'wb') as outfile:
             pickle.dump(subreddits_list, outfile)
 
 
@@ -91,7 +91,7 @@ class ScrapeSubmissions(luigi.Task):
         reddit = RedditPrawConnection(reddit_config)
 
         # Deserializes the subreddit objects from file
-        with open('data/{session_id}/subreddits.pickle'.format(session_id = self.session_id), 'rb') as infile:
+        with open(self.input().path, 'rb') as infile:
             subreddits = pickle.load(infile)
 
         # Creates a directory to store subreddit submissions
@@ -106,7 +106,7 @@ class ScrapeSubmissions(luigi.Task):
             # Convert the PRAW objects to app objects
             submission_list = submission_model_generator.get_list(submissions)
 
-            # Store each subreddit submissions in different pickle files. 
+            # Store each subreddit submissions in different pickle files.
             with open('data/{session_id}/subreddits/{subreddit_name}.pickle'.format
                           (session_id = self.session_id, subreddit_name = subreddit.display_name), 'wb') as outfile:
                 pickle.dump(submission_list, outfile)
@@ -185,13 +185,13 @@ class CalculateScores(luigi.Task):
         # chdir(path_parent)
 
         # Creates a new file named scores.csv
-        if not path.isfile('data/scores.csv'.format(session_id = self.session_id)):
-            with open('data/scores.csv'.format(session_id=self.session_id), 'w', newline = '') as newfile:
+        if not path.isfile('data/scores.csv'.format(session_id=self.session_id)):
+            with open(self.output().path, 'w', newline='') as newfile:
                 writer = csv.writer(newfile)
                 writer.writerow(["session_id", "subreddit_name", "score"])
 
         # Appends the new scores list to the CSV
-        with open('data/scores.csv'.format(session_id=self.session_id), 'a', newline = '') as file:
+        with open(self.output().path, 'a', newline='') as file:
             writer = csv.writer(file)
             writer.writerows(sorted_list)
 
