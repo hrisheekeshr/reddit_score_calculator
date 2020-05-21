@@ -37,25 +37,25 @@ class ScrapeSubreddits(luigi.Task):
         return None
 
     def output(self):
-        # Scraped data is stored in a folder called "temp/{unix epoch time}/subreddits.pickle"
-        return luigi.LocalTarget('temp/{session_id}/subreddits.pickle'.format(session_id = self.session_id))
+        # Scraped data is stored in a folder called "data/{unix epoch time}/subreddits.pickle"
+        return luigi.LocalTarget('data/{session_id}/subreddits.pickle'.format(session_id = self.session_id))
 
     def run(self):
         # Creates the reddit object
         reddit = RedditPrawConnection(reddit_config)
 
         # Gets the list of PRAW subreddit objects
-        subreddits = reddit.get_top_subreddits()
+        subreddits = reddit.get_top_subreddits(max_considered_subreddits = app_config.MAX_CONSIDERED_SUBREDDITS)
 
         # Converts the list of subreddits to the app object models
         subreddits_list = subreddit_model_generator.get_list(subreddits)
 
-        # Creates new folder under the temp directory
-        if not path.exists('temp/{session_id}'.format(session_id = self.session_id)):
-            makedirs('temp/{session_id}'.format(session_id = self.session_id))
+        # Creates new folder under the data directory
+        if not path.exists('data/{session_id}'.format(session_id = self.session_id)):
+            makedirs('data/{session_id}'.format(session_id = self.session_id))
 
         # Creates a pickle file and writes out the binary data to the filesystem.
-        with open('temp/{session_id}/subreddits.pickle'.format(session_id = self.session_id), 'wb') as outfile:
+        with open('data/{session_id}/subreddits.pickle'.format(session_id = self.session_id), 'wb') as outfile:
             pickle.dump(subreddits_list, outfile)
 
 
@@ -84,19 +84,19 @@ class ScrapeSubmissions(luigi.Task):
         return ScrapeSubreddits(session_id = self.session_id)
 
     def output(self):
-        return luigi.LocalTarget('temp/{session_id}/subreddits'.format(session_id = self.session_id))
+        return luigi.LocalTarget('data/{session_id}/subreddits'.format(session_id = self.session_id))
 
     def run(self):
         # Creates a reddit API connection
         reddit = RedditPrawConnection(reddit_config)
 
         # Deserializes the subreddit objects from file
-        with open('temp/{session_id}/subreddits.pickle'.format(session_id = self.session_id), 'rb') as infile:
+        with open('data/{session_id}/subreddits.pickle'.format(session_id = self.session_id), 'rb') as infile:
             subreddits = pickle.load(infile)
 
         # Creates a directory to store subreddit submissions
-        if not path.exists('temp/{session_id}/subreddits'.format(session_id = self.session_id)):
-            makedirs('temp/{session_id}/subreddits'.format(session_id = self.session_id))
+        if not path.exists('data/{session_id}/subreddits'.format(session_id = self.session_id)):
+            makedirs('data/{session_id}/subreddits'.format(session_id = self.session_id))
 
         # Iterates through each subreddits
         for subreddit in subreddits:
@@ -107,7 +107,7 @@ class ScrapeSubmissions(luigi.Task):
             submission_list = submission_model_generator.get_list(submissions)
 
             # Store each subreddit submissions in different pickle files. 
-            with open('temp/{session_id}/subreddits/{subreddit_name}.pickle'.format
+            with open('data/{session_id}/subreddits/{subreddit_name}.pickle'.format
                           (session_id = self.session_id, subreddit_name = subreddit.display_name), 'wb') as outfile:
                 pickle.dump(submission_list, outfile)
 
@@ -127,7 +127,7 @@ class CalculateScores(luigi.Task):
         return ScrapeSubmissions(session_id = self.session_id)
 
     def output(self):
-        return luigi.LocalTarget('scores/scores.csv')
+        return luigi.LocalTarget('data/scoress.csv')
 
     def run(self):
 
@@ -139,14 +139,14 @@ class CalculateScores(luigi.Task):
         results = []
 
         # Deserializes the pickle file stored under a session
-        with open('temp/{session_id}/subreddits.pickle'.format(session_id = self.session_id), 'rb') as infile:
+        with open('data/{session_id}/subreddits.pickle'.format(session_id = self.session_id), 'rb') as infile:
             subreddits = pickle.load(infile)
 
         # For each subreddit object in the subreddit object list
         for subreddit in subreddits:
             # Opens and loads corresponding submissions from the filesystem
             with open(
-                    'temp/{session_id}/subreddits/{subreddit_display_name}.pickle'.format
+                    'data/{session_id}/subreddits/{subreddit_display_name}.pickle'.format
                         (session_id = self.session_id, subreddit_display_name = subreddit.display_name),
                     'rb') as infile:
                 submissions = pickle.load(infile)
@@ -155,7 +155,7 @@ class CalculateScores(luigi.Task):
                 for submission in submissions:
 
                     # Loads the comments from submission
-                    comments = reddit.get_comments_of_submission(submission)
+                    comments = reddit.get_comments_of_submission(submission, max_comments_per_submission = app_config.MAX_COMMENTS_PER_SUBMISSION)
 
                     # For each comment object in list of comment objects
                     for comment in CommentModelGenerator(comments):
@@ -181,20 +181,19 @@ class CalculateScores(luigi.Task):
         sorted_list = sorted(results, key = lambda x: x[2], reverse = True)
 
         # Goes up in one directory
-        path_parent = path.dirname(getcwd())
-        chdir(path_parent)
+        # path_parent = path.dirname(getcwd())
+        # chdir(path_parent)
 
         # Creates a new file named scores.csv
-        if not path.isfile('scores.csv'):
-            with open('scores.csv', 'w', newline = '') as newfile:
+        if not path.isfile('data/scores.csv'.format(session_id = self.session_id)):
+            with open('data/scores.csv'.format(session_id=self.session_id), 'w', newline = '') as newfile:
                 writer = csv.writer(newfile)
                 writer.writerow(["session_id", "subreddit_name", "score"])
 
         # Appends the new scores list to the CSV
-        with open('scores.csv', 'a', newline = '') as file:
+        with open('data/scores.csv'.format(session_id=self.session_id), 'a', newline = '') as file:
             writer = csv.writer(file)
             writer.writerows(sorted_list)
-
 
 if __name__ == '__main__':
     luigi.build([CalculateScores(session_id = time())], workers = 1, local_scheduler = True)

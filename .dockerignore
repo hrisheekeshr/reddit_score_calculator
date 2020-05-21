@@ -1,0 +1,6 @@
+.git
+.cache
+*.csv
+*.pickle
+tasks/temp/*
+venv/

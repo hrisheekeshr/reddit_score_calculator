@@ -13,7 +13,7 @@ class AppConfig:
         self.MAX_CONSIDERED_SUBREDDITS = int()
         self.MAX_SUBMISSIONS_PER_SUBREDDIT = int()
         self.MAX_COMMENTS_PER_SUBMISSION = int()
-
+        self.updated = False
         self.set_config_from_environment()
 
     def set_config_from_environment(self):
