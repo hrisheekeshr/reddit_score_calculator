@@ -186,12 +186,12 @@ class CalculateScores(luigi.Task):
 
         # Creates a new file named scores.csv
         if not path.isfile('data/scores.csv'.format(session_id=self.session_id)):
-            with open(self.output().path, 'w', newline='') as newfile:
+            with open('data/scores.csv'.format(session_id=self.session_id), 'w', newline='') as newfile:
                 writer = csv.writer(newfile)
                 writer.writerow(["session_id", "subreddit_name", "score"])
 
         # Appends the new scores list to the CSV
-        with open(self.output().path, 'a', newline='') as file:
+        with open('data/scores.csv'.format(session_id=self.session_id), 'a', newline='') as file:
             writer = csv.writer(file)
             writer.writerows(sorted_list)
 
