@@ -26,6 +26,6 @@ class RedditConfig:
         Reads configurations and sets it globally
         :return:
         """
-        self.CLIENT_ID = os.environ.get("CLIENT_ID", 'TvvhZvAWFFce8g')
-        self.USER_AGENT = os.environ.get("USER_AGENT", 'trending-topic')
-        self.CLIENT_SECRET = os.environ.get("CLIENT_SECRET", 'sh105uoTTrEwTmUwYMZfrEfK9LM')
+        self.CLIENT_ID = os.environ.get("CLIENT_ID", '*****')
+        self.USER_AGENT = os.environ.get("USER_AGENT", '******')
+        self.CLIENT_SECRET = os.environ.get("CLIENT_SECRET", '*****')
