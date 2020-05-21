@@ -2,7 +2,10 @@ import logging
 
 
 class Logger:
-    logger = logging.getLogger("logging_tryout2")
+    """
+    Creates a custom logger class
+    """
+    logger = logging.getLogger('luigi-interface')
     logger.setLevel(logging.DEBUG)
 
     # create console handler and set level to debug
