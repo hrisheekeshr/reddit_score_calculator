@@ -10,5 +10,5 @@ def sleep_hours(hours):
     time.sleep(hours * 60 * 60)
 
 while True:
+    run(time.time())
     sleep_hours(schedule_interval)
-    sleep_hours()
