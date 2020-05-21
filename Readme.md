@@ -12,32 +12,30 @@ This repository contains a code that does the following things
     - subreddit name : name of the subreddit
     - score : subreddit score
 
-# Get Started
+# Get Started with Docker Images
+
 ## Run the container
 
 ```sh
 docker run \\
--v data:app/data \\
+-v $(pwd):/data \\
 --env CLIENT_ID={client_id} \\
 --env USER_AGENT={user-agent} \\
 --env CLIENT_SECRET={client-secret} \\
 rhrisheekesh/luigi-reddit:latest
 ```
+
 ## View Results
-The results can be viewed at 'scores.csv' situated at the root directory
-# Testing
 
-Go to the root directory and run :
-```sh
-bash tests.sh 
-```
-alternatively you can
+If you mount the /data directory, it has subfolders denoting each run. The subfolder name is according to the linux epoch time of run. 
 
-```python
- python -m unittest discover -s tests
-```
+It also has a csv, scores.csv which has the aggregate results of all runs
 
-# Building
+In the future, this can later be replaced with a database if required.
+
+
+
+## Building the image manually
 
 This whole pipeline is dockerised. To build the docker image
 ```sh
@@ -53,4 +51,36 @@ docker build \\
 All of these variables can be overridden during run. The env variable names are self explanatory. 
 
 For easiness of use, this repository is configured for automated builds in [Dockerhub](https://hub.docker.com/repository/docker/rhrisheekesh/luigi-reddit)
+
+# Developing without Docker
+
+## Code
+
+Code is well documented with docstrings including examples, return types and params. Please refer to the code for more details
+
+## Testing 
+
+I have used python unittest for testing. 
+
+
+Go to the root directory and run :
+```sh
+bash tests.sh 
+```
+alternatively you can do
+
+```python
+ python -m unittest discover -s tests
+```
+
+## Running
+
+To run the code, 
+```python
+ python run.py
+```
+
+# CI
+
+This repository is integrated to an automatic build systems - Github Actions. The YML files are in the root of this repository under .github directory.
 
