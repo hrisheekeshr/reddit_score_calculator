@@ -1,14 +1,35 @@
 import luigi
 from reddit.praw_connection import RedditPrawConnection
-from config import RedditConfig, AppConfig
+from config import AppConfig, RedditConfig
 import pickle
 from os import path, makedirs, getcwd, chdir
 from middleware.model_generators import submission_model_generator, subreddit_model_generator, CommentModelGenerator
 from time import time
 import csv
 
+app_config = AppConfig()
+reddit_config = RedditConfig()
+
 
 class ScrapeSubreddits(luigi.Task):
+    """
+    Get subreddit list from API -----> Convert these objects to app subreddit objects ----> Store in filesystem
+
+    Get subreddit list from API
+    ===========================
+        Uses the RedditPrawConnection to get the relevant subreddits
+
+    Convert these objects to app subreddit objects
+    ==============================================
+        Converts the PRAW objects to App objects with methods to calculate subreddit score
+
+    Store in filesystem
+    ===================
+        These objects are serialised to pickle format and stored in the filesystem
+
+    """
+    # Luigi parameter that taken in the unix EPOCH time as session_id
+    # This is shared across different tasks to separate data different runs
     session_id = luigi.Parameter()
 
     def requires(self):
@@ -18,7 +39,7 @@ class ScrapeSubreddits(luigi.Task):
         return luigi.LocalTarget('temp/{session_id}/subreddits.pickle'.format(session_id=self.session_id))
 
     def run(self):
-        reddit = RedditPrawConnection(RedditConfig)
+        reddit = RedditPrawConnection(reddit_config)
         subreddits = reddit.get_top_subreddits(max_considered_subreddits=3)
         subreddits_list = subreddit_model_generator.get_list(subreddits)
 
@@ -39,7 +60,7 @@ class ScrapeSubmissions(luigi.Task):
         return luigi.LocalTarget('temp/{session_id}/subreddits'.format(session_id=self.session_id))
 
     def run(self):
-        reddit = RedditPrawConnection(RedditConfig)
+        reddit = RedditPrawConnection(reddit_config)
 
         with open('temp/{session_id}/subreddits.pickle'.format(session_id=self.session_id), 'rb') as infile:
             subreddits = pickle.load(infile)
@@ -48,7 +69,7 @@ class ScrapeSubmissions(luigi.Task):
             makedirs('temp/{session_id}/subreddits'.format(session_id=self.session_id))
 
         for subreddit in subreddits:
-            submissions = reddit.get_submissions_from_subreddit(subreddit, AppConfig.MAX_SUBMISSIONS_PER_SUBREDDIT)
+            submissions = reddit.get_submissions_from_subreddit(subreddit, app_config.MAX_SUBMISSIONS_PER_SUBREDDIT)
             submission_list = submission_model_generator.get_list(submissions)
             with open('temp/{session_id}/subreddits/{subreddit_name}.pickle'.format(session_id=self.session_id,
                                                                                     subreddit_name=subreddit.display_name),
@@ -56,7 +77,7 @@ class ScrapeSubmissions(luigi.Task):
                 pickle.dump(submission_list, outfile)
 
 
-class CreateDataFrame(luigi.Task):
+class CalculateScores(luigi.Task):
     session_id = luigi.Parameter()
 
     def requires(self):
@@ -67,7 +88,7 @@ class CreateDataFrame(luigi.Task):
 
     def run(self):
 
-        reddit = RedditPrawConnection(RedditConfig)
+        reddit = RedditPrawConnection(reddit_config)
 
         results = []
 
@@ -76,8 +97,8 @@ class CreateDataFrame(luigi.Task):
 
         for subreddit in subreddits:
             info = dict()
-            with open('temp/{session_id}/subreddits/{subreddit_display_name}.pickle'.format(session_id = self.session_id,
-                                                                                            subreddit_display_name = subreddit.display_name),
+            with open('temp/{session_id}/subreddits/{subreddit_display_name}.pickle'.format(session_id=self.session_id,
+                                                                                            subreddit_display_name=subreddit.display_name),
                       'rb') as infile:
                 submissions = pickle.load(infile)
                 for submission in submissions:
@@ -86,7 +107,7 @@ class CreateDataFrame(luigi.Task):
                         submission.add_comment_score(comment.ups)
                     submission.calculate_score()
                     subreddit.add_submission_score(submission.score)
-            subreddit.set_num_posts_per_subreddit(AppConfig.MAX_SUBMISSIONS_PER_SUBREDDIT)
+            subreddit.set_num_posts_per_subreddit(app_config.MAX_SUBMISSIONS_PER_SUBREDDIT)
             subreddit.calculate_subreddit_score()
             results.append([self.session_id, str(subreddit.display_name), float(subreddit.score)])
 
@@ -98,7 +119,7 @@ class CreateDataFrame(luigi.Task):
         if not path.isfile('scores.csv'):
             with open('scores.csv', 'w', newline='') as newfile:
                 writer = csv.writer(newfile)
-                writer.writerow(["session_id","subreddit_name","score"])
+                writer.writerow(["session_id", "subreddit_name", "score"])
 
         with open('scores.csv', 'a', newline='') as file:
             writer = csv.writer(file)
@@ -106,4 +127,4 @@ class CreateDataFrame(luigi.Task):
 
 
 if __name__ == '__main__':
-    luigi.build([CreateDataFrame(session_id=time())], workers=1, local_scheduler=True)
+    luigi.build([CalculateScores(session_id=time())], workers=1, local_scheduler=True)

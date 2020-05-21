@@ -1,4 +1,7 @@
 class Subreddit:
+    """
+    This is the base data model for a subreddit
+    """
 
     def __init__(self, subreddit):
         self.__total_submission_score = float(0)
@@ -10,15 +13,28 @@ class Subreddit:
         self.score = float(0)
 
     def set_num_posts_per_subreddit(self, value):
+        """
+        Sets the number of posts per subreddit. Default set to the read from app config
+        :param value:
+        :return: None
+        """
         self.__num_posts_per_subreddit = value
 
     def get_num_posts_per_subreddit(self):
+        """
+        Gets the current value of number of posts per subreddit
+        :return: int
+        """
         return self.__num_posts_per_subreddit
 
     def add_submission_score(self, score):
         self.__total_submission_score += score
 
     def calculate_subreddit_score(self):
+        """
+        Calculates the subreddit score
+        :return:
+        """
         try:
             self.score = self.__total_submission_score / self.__num_posts_per_subreddit
         except ZeroDivisionError:
