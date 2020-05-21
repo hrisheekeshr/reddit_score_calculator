@@ -1,6 +1,6 @@
 # Reddit Score Calculator
 
-![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/rhrisheekesh/luigi-reddit)
+![Python application](https://github.com/hrisheekeshr/reddit_score_calculator/workflows/Python%20application/badge.svg)
 
 This repository contains a code that does the following things
 
